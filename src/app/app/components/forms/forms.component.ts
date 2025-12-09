@@ -1,12 +1,22 @@
 import { Component, OnInit } from '@angular/core';
 import { signal } from '@angular/core';
 import { user } from './user.type';
-import { Field, form, required, min, max, pattern } from '@angular/forms/signals';
+import {
+  Field,
+  form,
+  required,
+  min,
+  max,
+  pattern,
+  Schema,
+  schema,
+  apply,
+} from '@angular/forms/signals';
 import { JsonPipe } from '@angular/common';
 
 @Component({
   selector: 'app-forms',
-  imports: [Field, JsonPipe],
+  imports: [Field],
   templateUrl: './forms.html',
 })
 export class Forms implements OnInit {
@@ -18,22 +28,30 @@ export class Forms implements OnInit {
     newsletter: false,
   });
 
-  public readonly form = form(this.user, (path) => {
-    required(path.fullname, { message: 'Fullname is required' });
+  schemaUser: Schema<user> = schema((path) => {
     required(path.birthdate, { message: 'Birthdate is required' });
-    required(path.genre, { message: 'Genre is required' });
-    /*
-  required(path.identifier, { message: 'Identifier is required' });
-min(path.identifier, 1000, { message: 'Identifier must be at least 1000' });
-    max(path.identifier, 9999, { message: 'Identifier must be at most 9999' });*/
-    pattern(path.fullname, /^[a-zA-Z\s]+$/, {
-      message: 'Fullname can only contain letters and spaces',
-    });
+    required(path.identifier, { message: 'Identifier is required' });
+    min(path.identifier, 1000, { message: 'Identifier must be at least 1000' });
+    max(path.identifier, 9999, { message: 'Identifier must be at most 9999' });
+
+    apply(path.genre, this.schemaText);
+    apply(path.fullname, this.schemaText);
     required(path.newsletter, {
       when: ({ valueOf }) => valueOf(path.identifier) > 1000,
       message: 'Newsletter subscription is required',
     });
+    // validations
   });
+
+  schemaText: Schema<string> = schema((path) => {
+    min(path, 3, { message: 'must be at least 3' });
+    max(path, 20, { message: 'must be at most 20' });
+    pattern(path, /^[a-zA-Z\s]+$/, {
+      message: 'can only contain letters and spaces',
+    });
+  });
+
+  public readonly form = form(this.user, this.schemaUser);
 
   ngOnInit(): void {
     this.form().value.set({
